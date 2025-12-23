@@ -117,7 +117,12 @@ if st.button("🔊 Show Random Song"):
     st.session_state.songs_played.append(random_song)
     # Play the selected MP3 file
     qr_path = os.path.join(st.session_state.locs['qrcode_spotify'], random_row.qr_code)
-    st.image(qr_path, caption=random_row.spotify_link)
+
+    
+    st.image(qr_path)
+    if not pd.isna(random_row.youtube_link):
+        st.markdown(f"[YouTube link]({random_row.youtube_link})", unsafe_allow_html=True)
+
 
 if st.button("Show solution"):
     display_music_information(st.session_state.song_playing)
