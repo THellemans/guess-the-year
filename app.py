@@ -3,6 +3,42 @@ import pandas as pd
 import os
 import json
 import numpy as np
+import base64
+
+# Placing a background
+
+# Convert local image to Base64
+def get_base64_of_image(image_path):
+    with open(image_path, "rb") as img_file:
+        return base64.b64encode(img_file.read()).decode()
+
+# Path to your local image
+image_path = "images/background.jpeg"
+img_base64 = get_base64_of_image(image_path)
+
+# CSS for placing background image on right side only
+page_bg_img = f"""
+<style>
+[data-testid="stAppViewContainer"] {{
+    background-image: url("data:image/jpeg;base64,{img_base64}");
+    background-repeat: no-repeat;
+    background-position: right center; /* Align image to the right */
+    background-size: contain; /* Keep original aspect ratio */
+    background-color: #ffffff; /* Fill the left side with solid color */
+}}
+[data-testid="stHeader"] {{
+    background: rgba(0,0,0,0);
+}}
+[data-testid="stToolbar"] {{
+    right: 2rem;
+}}
+</style>
+"""
+
+st.markdown(page_bg_img, unsafe_allow_html=True)
+
+# DOne placing the background
+
 
 def display_music_information(song_playing):
     artist, title, year_mp3 = song_playing.split('_')
