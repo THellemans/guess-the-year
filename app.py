@@ -19,19 +19,14 @@ img_base64 = get_base64_of_image(image_path)
 # CSS for placing background image on right side only
 page_bg_img = f"""
 <style>
-/* Main content stays clean */
-[data-testid="stAppViewContainer"] {{
-    background-color: #ffffff;
-}}
-
-/* Right-side decorative background */
-body::after {{
+/* Fixed decorative background on the right */
+body::before {{
     content: "";
     position: fixed;
     top: 0;
     right: 0;
-    width: 35%;
-    height: 100%;
+    width: 35vw;
+    height: 100vh;
     background-image: url("data:image/jpeg;base64,{img_base64}");
     background-repeat: no-repeat;
     background-position: center;
@@ -39,6 +34,11 @@ body::after {{
     opacity: 0.25;
     pointer-events: none;
     z-index: -1;
+}}
+
+/* Keep Streamlit content above background */
+[data-testid="stAppViewContainer"] {{
+    background-color: #ffffff;
 }}
 </style>
 """
