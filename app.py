@@ -5,6 +5,10 @@ import json
 import numpy as np
 import base64
 
+# -------------------------
+# Helper functions
+# -------------------------
+
 def display_music_information(song_playing):
     artist, title, year_mp3 = song_playing.split('_')
     year = year_mp3.replace('.mp3', '')
@@ -16,96 +20,142 @@ def display_music_information(song_playing):
             <p><strong>Artist:</strong> {artist}<br>
                <strong>Title:</strong> {title}</p>
         </div>
-        """, unsafe_allow_html=True
+        """,
+        unsafe_allow_html=True
     )
 
-# Load in all data we only load in once
-if 'can_undo' not in st.session_state:
+def give_points(team):
+    st.session_state.scoreboard[team, 0] = int(
+        st.session_state.song_playing.split('_')[-1][:4]
+    )
+    st.session_state.scoreboard[team, :] = np.sort(
+        st.session_state.scoreboard[team, :]
+    )
+    if st.session_state.scoreboard[team, 0] != 0:
+        st.title("WINNER!")
+
+# -------------------------
+# Session state init
+# -------------------------
+
+if "can_undo" not in st.session_state:
     st.session_state.can_undo = False
 
-if 'list_chosen' not in st.session_state:
+if "list_chosen" not in st.session_state:
     st.session_state.list_chosen = False
 
-if 'locs' not in st.session_state:
-    with open("data/locs.json", 'r') as file:
-        st.session_state.locs = json.load(file)
-
-st.session_state.df_all = pd.read_csv(os.path.join(st.session_state.locs['centralized'], 'unique_per_list.csv'))
-
-if 'songs_played' not in st.session_state:
-    st.session_state.songs_played = list()
+if "songs_played" not in st.session_state:
+    st.session_state.songs_played = []
 
 if "chose_players" not in st.session_state:
     st.session_state.chose_players = False
 
-# Streamlit app starts here
+if "song_active" not in st.session_state:
+    st.session_state.song_active = False
+
+if "locs" not in st.session_state:
+    with open("data/locs.json", "r") as file:
+        st.session_state.locs = json.load(file)
+
+# -------------------------
+# Load data
+# -------------------------
+
+st.session_state.df_all = pd.read_csv(
+    os.path.join(
+        st.session_state.locs["centralized"],
+        "unique_per_list.csv"
+    )
+)
+
+# -------------------------
+# App header
+# -------------------------
+
 st.markdown(
     "<h1 style='text-align: center;'>🎶 Guess the year 🎶</h1>",
     unsafe_allow_html=True
 )
 
-# Add explanation dropdown at top of app
+# -------------------------
+# Rules
+# -------------------------
+
 with st.expander("📖 Explanation: How to Play 'Guess the Year'"):
     st.markdown("""
-    ## 🕹️ Welcome to *Guess the Year*!  
-    This is a fun team-based music guessing game where you test your knowledge of song release years — and optionally your skill in naming the song and artist.
+    ## 🕹️ Welcome to *Guess the Year*!
 
-    ---
-    ### **🎯 Minimum Game Rules:**
-    1. **Divide into Teams**  
-       Gather your friends or family and form teams. Friendly rivalry encouraged!
-    2. **Hear a Song**  
-       The game plays a randomly selected song.
-    3. **Guess the Release Year**  
-       Instead of blindly guessing, place the song in its correct order **relative to the years you've already guessed**.
-    4. **Win the Song**  
-       If your team guesses correctly, you "win" that song and it is added to your team's timeline.
+    Guess the release year of songs by placing them correctly
+    relative to the timeline you’ve already built.
 
-    ---
-    ### **✨ Extra Rules (optional – feel free to add your own!):**
-    5. **Guess the Song Title and Artist**  
-       Bonus challenge: name the song **and** the artist correctly.
-    6. **Earn Tokens**  
-       If you guess both title and artist right, you gain a *token*. (Keep track of tokens manually.)
-    7. **Use Tokens to Contest**  
-       Spend a token to challenge another team's guess.
-    8. **Steal the Song**  
-       If your contest is correct, you win the song for your team instead — even if the other team guessed wrong.
+    **Minimum rules**
+    1. Divide into teams
+    2. Hear a song
+    3. Guess the year
+    4. Correct guess wins the song
 
-    ---
-    **Goal:** Be the team with the most correctly placed songs and prove your musical timeline mastery! 
-    
-    ---
-    
-    **Remember**: these are **minimum rules** — make the game your own!🎶
+    **Optional rules**
+    - Guess artist & title for bonus points
+    - Use tokens to contest other teams
+    """)
 
-    """, unsafe_allow_html=True)
+# -------------------------
+# Player setup
+# -------------------------
 
 if not st.session_state.chose_players:
-    number_rounds = st.slider(min_value=2, max_value = 30, value = 10, label = "How many points to win?")
-    number_of_players = st.slider(min_value=1, max_value = 10, value = 2, label = "How many players?")
+    number_rounds = st.slider(
+        "How many points to win?",
+        min_value=2,
+        max_value=30,
+        value=10
+    )
+
+    number_of_players = st.slider(
+        "How many players?",
+        min_value=1,
+        max_value=10,
+        value=2
+    )
+
     if st.button("Confirm!"):
         st.session_state.number_rounds = number_rounds
         st.session_state.number_of_players = number_of_players
-        st.session_state.scoreboard = np.zeros((st.session_state.number_of_players, st.session_state.number_rounds), dtype = int)
-        st.session_state.scoreboard[:, -1] = np.random.randint(1960, 2020, (st.session_state.scoreboard.shape[0]))
+        st.session_state.scoreboard = np.zeros(
+            (number_of_players, number_rounds),
+            dtype=int
+        )
+        st.session_state.scoreboard[:, -1] = np.random.randint(
+            1960, 2020, number_of_players
+        )
         st.session_state.chose_players = True
         st.rerun()
+
     st.stop()
-        
+
+# -------------------------
+# Restart
+# -------------------------
+
 if st.button("Restart Game"):
-    for key in st.session_state.keys():
+    for key in list(st.session_state.keys()):
         del st.session_state[key]
     st.rerun()
 
-if not st.session_state.get("list_chosen", False):
+# -------------------------
+# Choose music lists
+# -------------------------
+
+if not st.session_state.list_chosen:
     st.write("Choose one or more music lists you want to use")
-    
-    available_origins = list(st.session_state.df_all.origin.unique())
+
+    available_origins = list(
+        st.session_state.df_all.origin.unique()
+    )
     available_with_all = ["All"] + available_origins
-    
+
     chosen_lists = st.multiselect(
-        "Choose your list(s) :-)", 
+        "Choose your list(s)",
         available_with_all
     )
 
@@ -115,79 +165,121 @@ if not st.session_state.get("list_chosen", False):
         st.session_state.chosen_list = chosen_lists
 
     if st.session_state.chosen_list and st.button("Choose list(s)!"):
-        st.session_state.df = st.session_state.df_all.query("origin in @st.session_state.chosen_list").copy()
-        
-        # Clean up artist and title text
-        st.session_state.df['artist'] = (
-            st.session_state.df['artist']
-            .str.replace('_', '', regex=False)
-            .str.replace('/', '', regex=False)
-            .str.replace('\\', '', regex=False)
+        df = st.session_state.df_all.query(
+            "origin in @st.session_state.chosen_list"
+        ).copy()
+
+        df["artist"] = df["artist"].str.replace("_", "", regex=False)
+        df["title"] = df["title"].str.replace("_", "", regex=False)
+
+        df["qr_code"] = df["artist"] + "_" + df["title"] + ".png"
+
+        spotify_links = os.listdir(
+            st.session_state.locs["qrcode_spotify"]
         )
-        st.session_state.df['title'] = (
-            st.session_state.df['title']
-            .str.replace('_', '', regex=False)
-            .str.replace('/', '', regex=False)
-            .str.replace('\\', '', regex=False)
-        )
-        
-        st.session_state.df['qr_code'] = (
-            st.session_state.df['artist'] + '_' + st.session_state.df['title'] + '.png'
-        )
-        
-        spotify_links = os.listdir(st.session_state.locs['qrcode_spotify'])
-        st.session_state.df = st.session_state.df.query("qr_code in @spotify_links")
-        
+        df = df.query("qr_code in @spotify_links")
+
+        st.session_state.df = df
         st.session_state.list_chosen = True
 
-# Stop execution if no list chosen yet
-if not st.session_state.get("list_chosen", False):
     st.stop()
 
-# Provide random file selection and validation
+# -------------------------
+# Show random song
+# -------------------------
+
 if st.button("🔊 Show Random Song"):
     while True:
         random_row = st.session_state.df.sample().iloc[0]
-        random_song = f"{random_row.artist}_{random_row.title}_{random_row.year}"
-        st.session_state.song_playing = random_song
+        random_song = (
+            f"{random_row.artist}_"
+            f"{random_row.title}_"
+            f"{random_row.year}"
+        )
         if random_song not in st.session_state.songs_played:
             break
+
+    st.session_state.song_playing = random_song
     st.session_state.songs_played.append(random_song)
-    # Play the selected MP3 file
-    qr_path = os.path.join(st.session_state.locs['qrcode_spotify'], random_row.qr_code)
+    st.session_state.song_active = True
 
-    
+    qr_path = os.path.join(
+        st.session_state.locs["qrcode_spotify"],
+        random_row.qr_code
+    )
+
     st.image(qr_path)
+
     if not pd.isna(random_row.youtube_link):
-        st.markdown(f"[YouTube link]({random_row.youtube_link})", unsafe_allow_html=True)
+        st.markdown(
+            f"[YouTube link]({random_row.youtube_link})"
+        )
 
+# -------------------------
+# Show solution (only if song active)
+# -------------------------
 
-if st.button("Show solution"):
-    display_music_information(st.session_state.song_playing)
+if st.session_state.song_active:
+    if st.button("Show solution"):
+        display_music_information(
+            st.session_state.song_playing
+        )
 
-def give_points(team):
-    st.session_state.scoreboard[team, 0] = int(st.session_state.song_playing.split('_')[-1][:4])
-    st.session_state.scoreboard[team, :] = np.sort(st.session_state.scoreboard[team, :])
-    if st.session_state.scoreboard[team, 0] != 0:
-        st.title("WINNER!")
+# -------------------------
+# Team buttons (only if song active)
+# -------------------------
 
-# Create columns based on the number of teams
-columns = st.columns(st.session_state.number_of_players)
+if st.session_state.song_active:
+    columns = st.columns(
+        st.session_state.number_of_players
+    )
 
-# Place buttons in separate columns
-for i in range(st.session_state.number_of_players):
-    with columns[i]:  # Use each column to place a button
-        if st.button(f"Team {i + 1} answered correctly!"):
-            give_points(i)
-            st.session_state.winning_person = i
-            st.session_state.can_undo = True
+    for i in range(st.session_state.number_of_players):
+        with columns[i]:
+            if st.button(f"Team {i + 1} answered correctly!"):
+                give_points(i)
+                st.session_state.winning_person = i
+                st.session_state.can_undo = True
+                st.session_state.song_active = False
+
+# -------------------------
+# Undo
+# -------------------------
 
 if st.session_state.can_undo:
     if st.button("Undo last addition"):
-        loc_last = st.session_state.scoreboard[st.session_state.winning_person, :] == int(st.session_state.song_playing.split('_')[-1][:4])
-        st.session_state.scoreboard[st.session_state.winning_person, loc_last] = 0
-        st.session_state.scoreboard[st.session_state.winning_person, :] = np.sort(st.session_state.scoreboard[st.session_state.winning_person, :])
+        year = int(
+            st.session_state.song_playing
+            .split("_")[-1][:4]
+        )
+        loc = (
+            st.session_state.scoreboard[
+                st.session_state.winning_person, :
+            ] == year
+        )
+        st.session_state.scoreboard[
+            st.session_state.winning_person, loc
+        ] = 0
+        st.session_state.scoreboard[
+            st.session_state.winning_person, :
+        ] = np.sort(
+            st.session_state.scoreboard[
+                st.session_state.winning_person, :
+            ]
+        )
+        st.session_state.song_active = True
         st.session_state.can_undo = False
 
-for num_player in range(st.session_state.number_of_players):
-    st.title('-'.join([str(year) for year in st.session_state.scoreboard[num_player, :]]))
+# -------------------------
+# Scoreboard
+# -------------------------
+
+for p in range(st.session_state.number_of_players):
+    st.title(
+        "-".join(
+            map(
+                str,
+                st.session_state.scoreboard[p, :]
+            )
+        )
+    )
