@@ -19,18 +19,26 @@ img_base64 = get_base64_of_image(image_path)
 # CSS for placing background image on right side only
 page_bg_img = f"""
 <style>
+/* Main content stays clean */
 [data-testid="stAppViewContainer"] {{
+    background-color: #ffffff;
+}}
+
+/* Right-side decorative background */
+body::after {{
+    content: "";
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 35%;
+    height: 100%;
     background-image: url("data:image/jpeg;base64,{img_base64}");
     background-repeat: no-repeat;
-    background-position: right center; /* Align image to the right */
-    background-size: contain; /* Keep original aspect ratio */
-    background-color: #ffffff; /* Fill the left side with solid color */
-}}
-[data-testid="stHeader"] {{
-    background: rgba(0,0,0,0);
-}}
-[data-testid="stToolbar"] {{
-    right: 2rem;
+    background-position: center;
+    background-size: contain;
+    opacity: 0.25;
+    pointer-events: none;
+    z-index: -1;
 }}
 </style>
 """
