@@ -5,49 +5,6 @@ import json
 import numpy as np
 import base64
 
-# Placing a background
-
-# Convert local image to Base64
-def get_base64_of_image(image_path):
-    with open(image_path, "rb") as img_file:
-        return base64.b64encode(img_file.read()).decode()
-
-# Path to your local image
-image_path = "images/background.jpeg"
-img_base64 = get_base64_of_image(image_path)
-
-# CSS for placing background image on right side only
-page_bg_img = f"""
-<style>
-/* Fixed decorative background on the right */
-body::before {{
-    content: "";
-    position: fixed;
-    top: 0;
-    right: 0;
-    width: 35vw;
-    height: 100vh;
-    background-image: url("data:image/jpeg;base64,{img_base64}");
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: contain;
-    opacity: 0.25;
-    pointer-events: none;
-    z-index: -1;
-}}
-
-/* Keep Streamlit content above background */
-[data-testid="stAppViewContainer"] {{
-    background-color: #ffffff;
-}}
-</style>
-"""
-
-st.markdown(page_bg_img, unsafe_allow_html=True)
-
-# DOne placing the background
-
-
 def display_music_information(song_playing):
     artist, title, year_mp3 = song_playing.split('_')
     year = year_mp3.replace('.mp3', '')
